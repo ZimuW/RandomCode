@@ -1,0 +1,5 @@
+# Include
+include src/_ucrdtw.c
+include src/ucrdtw.c
+include ucrdtw.o
+include src/ucrdtw.h

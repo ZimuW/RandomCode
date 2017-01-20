@@ -1,0 +1,2 @@
+model_checkpoint_path: "/jupyter/tomoaki/DQN/trained_params.ckpt"
+all_model_checkpoint_paths: "/jupyter/tomoaki/DQN/trained_params.ckpt"
