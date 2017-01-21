@@ -80,8 +80,8 @@ def train(args):
     model = Model(args)
 
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        saver = tf.train.Saver(tf.global_variables())
+        sess.run(tf.initialize_all_variables())
+        saver = tf.train.Saver()
         if args.init_from is not None:
             saver.restore(sess, ckpt.model_checkpoint_path)
         for e in range(args.num_epochs):
@@ -93,6 +93,9 @@ def train(args):
                 x, y = data_loader.next_batch()
                 feed = {model.input_data : x, model.targets : y}
                 # I skipped states here
+                for i, (c, h) in enumerate(model.initial_state):
+                    feed[c] = state[i].c
+                    feed[h] = state[i].h
                 train_loss, state, _ = sess.run([model.cost, model.final_state, model.train_op], feed)
                 end = time.time()
                 print("{}/{} (epoch {}), train_loss = {:.3f}, time/batch = {:.3f}" \

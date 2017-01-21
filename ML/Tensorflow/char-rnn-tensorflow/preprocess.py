@@ -51,21 +51,22 @@ class InputLoader():
 
         self.tensor = self.tensor[:self.num_batches * self.batch_size * self.seq_length]
         # I think the following code should be a better way to generate batches, let's see
-        # self.tensor_length = len(self.tensor)
-        # start_index = np.random.rand(self.num_batches, 1)
-        # self.x_batches = []
-        # self.y_batches = []
-        # for index in start_index:
-        #     real_index = int(index * (self.tensor_length - self.batch_size - 1) )
-        #     self.x_batches.append(self.tensor[real_index: real_index + self.batch_size])
-        #     self.y_batches.append(self.tensor[real_index+1 : real_index + self.batch_size + 1])
+        self.tensor_length = len(self.tensor)
+        start_index = np.random.rand(self.num_batches, 1)
+        self.x_batches = []
+        self.y_batches = []
+        for index in start_index:
+            real_index = int(index * (self.tensor_length - self.seq_length * self.batch_size - 1) )
+            self.x_batches.append(np.reshape(self.tensor[real_index: real_index + self.seq_length * self.batch_size], (self.batch_size, self.seq_length)))
+            self.y_batches.append(np.reshape(self.tensor[real_index+1 : real_index + self.batch_size * self.seq_length + 1], (self.batch_size, self.seq_length)))
 
-        xdata = self.tensor
-        ydata = np.copy(self.tensor)
-        ydata[:-1] = xdata[1:]
-        ydata[-1] = xdata[0]
-        self.x_batches = np.split(xdata.reshape(self.batch_size, -1), self.num_batches, 1)
-        self.y_batches = np.split(ydata.reshape(self.batch_size, -1), self.num_batches, 1)
+        # print(self.tensor.shape)
+        # xdata = self.tensor
+        # ydata = np.copy(self.tensor)
+        # ydata[:-1] = xdata[1:]
+        # ydata[-1] = xdata[0]
+        # self.x_batches = np.split(xdata.reshape(self.batch_size, -1), self.num_batches, 1)
+        # self.y_batches = np.split(ydata.reshape(self.batch_size, -1), self.num_batches, 1)
 
     def next_batch(self):
         x, y = self.x_batches[self.pointer], self.y_batches[self.pointer]
