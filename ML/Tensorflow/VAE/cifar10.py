@@ -95,6 +95,7 @@ class DataLoader(object):
         # return self.distort_batch(np.array(result, dtype=np.float32))
         for data in self.data[self.pointer : self.pointer + batch_size]:
             result.append(data)
+        
         return np.array(result, dtype=np.float32)
 
     def distort_batch(self, batch):
