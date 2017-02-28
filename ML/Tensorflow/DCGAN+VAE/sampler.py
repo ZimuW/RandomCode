@@ -28,7 +28,7 @@ import random
 import PIL
 from PIL import Image
 import pylab
-from model import DCGANVAE
+from model2_0 import DCGANVAE
 import matplotlib.pyplot as plt
 import images2gif
 from images2gif import writeGif
@@ -41,9 +41,9 @@ mgc(u'run -i mnist_data.py')
 pylab.rcParams['figure.figsize'] = (10.0, 10.0)
 
 class Sampler():
-  def __init__(self):
+  def __init__(self, data_name="Mnist"):
     self.mnist = None
-    self.model = DCGANVAE()
+    self.model = DCGANVAE(data_name=data_name)
     self.model.load_model('save')
     self.z = self.generate_z()
   def get_random_mnist(self, with_label = False):
@@ -87,7 +87,7 @@ class Sampler():
     x_dim = image_data.shape[1]
     c_dim = self.model.c_dim
     if c_dim > 1:
-      plt.imshow(image_data, interpolation='nearest')
+      plt.imshow(image_data, vmin=0, vmax=1)
     else:
       plt.imshow(image_data.reshape(y_dim, x_dim), cmap='Greys', interpolation='nearest')
     plt.axis('off')

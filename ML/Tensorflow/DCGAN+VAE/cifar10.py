@@ -47,12 +47,13 @@ class DataLoader(object):
           labels = np.array(d["labels"])
           nsamples = len(data)
           for d in data:
-            k = d.reshape(3, 32, 32).transpose(1, 2, 0)
+            k = d.reshape(3, 32, 32).transpose(2, 1, 0)
+            self.data.append(k)
 
-            self.data.append(k.reshape(-1,))
 
         self.data = np.array(self.data, dtype=np.float32)
-        self.data /= 255.0
+
+        self.data = self.data / 255.
 
         self.num_examples = len(self.data)
 
@@ -93,10 +94,8 @@ class DataLoader(object):
         # for data in self.data[self.pointer:self.pointer+batch_size]:
         #   result.append(random_flip(data))
         # return self.distort_batch(np.array(result, dtype=np.float32))
-        for data in self.data[self.pointer : self.pointer + batch_size]:
-            result.append(data)
-        
-        return np.array(result, dtype=np.float32)
+        return self.data[self.pointer : self.pointer + batch_size]
+
 
     def distort_batch(self, batch):
         batch_size = len(batch)

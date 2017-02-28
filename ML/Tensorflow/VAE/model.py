@@ -12,7 +12,7 @@ def xavier_init(fan_in, fan_out, constant=1):
     return tf.random_uniform([fan_in, fan_out], minval=low, maxval=high, dtype=tf.float32)
 
 class VariantionalAutoencoder(object):
-    def __init__(self, network_architecture, transfer_func=tf.nn.softplus, learning_rate=0.001, batch_size=100):
+    def __init__(self, network_architecture, transfer_func=tf.nn.softplus, learning_rate=0.00001, batch_size=100):
         self.network_architecture = network_architecture
         self.transfer_func = transfer_func
         self.learning_rate = learning_rate

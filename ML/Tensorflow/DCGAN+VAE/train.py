@@ -15,7 +15,7 @@ if isMnist:
 if isCifar:
     from cifar10 import DataLoader
     cifar = DataLoader()
-from model import DCGANVAE
+from model2_0 import DCGANVAE
 
 '''
 dcgan vae:
@@ -37,7 +37,7 @@ def main():
                      help='display step')
   parser.add_argument('--checkpoint_step', type=int, default=1,
                      help='checkpoint step')
-  parser.add_argument('--batch_size', type=int, default=500,
+  parser.add_argument('--batch_size', type=int, default=100,
                      help='batch size')
   parser.add_argument('--learning_rate', type=float, default=0.005,
                      help='learning rate for G and VAE')
@@ -52,6 +52,11 @@ def main():
   args = parser.parse_args()
   return train(args)
 
+def sigmoid(x,shift,mult):
+    """
+    Using this sigmoid to discourage one network overpowering the other
+    """
+    return 1 / (1 + math.exp(-(x+shift)*mult))
 def train(args):
 
   learning_rate = args.learning_rate
@@ -78,7 +83,8 @@ def train(args):
     avg_d_loss = 0.
     avg_q_loss = 0.
     avg_vae_loss = 0.
-    total_batch = 100
+    total_batch = 600
+    n_samples = total_batch * batch_size
     for i in range(total_batch):
       if isMnist:
           batch_images = mnist.train.next_batch(batch_size)[0]
@@ -88,7 +94,7 @@ def train(args):
           batch_images = cifar.next_batch(batch_size)
           print batch_images.shape
           batch_images = np.reshape(batch_images, [batch_size, 32, 32, 3])
-      d_loss, g_loss, vae_loss, n_operations = dcganvae.partial_train(batch_images)
+      d_loss, g_loss, vae_loss, ll_loss = dcganvae.partial_train(batch_images)
     #   print d_loss
     #   print g_loss
     #   print vae_loss
@@ -101,7 +107,7 @@ def train(args):
               "d_loss=", "{:.4f}".format(d_loss), \
               "g_loss=", "{:.4f}".format(g_loss), \
               "vae_loss=", "{:.4f}".format(vae_loss), \
-              "n_op=", '%d' % (n_operations)
+              "ll_loss=", "{:.4f}".format(ll_loss)
       counter += 1
       avg_d_loss += d_loss / n_samples * batch_size
       avg_q_loss += g_loss / n_samples * batch_size

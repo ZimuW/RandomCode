@@ -5,6 +5,8 @@ from model import VariantionalAutoencoder
 import matplotlib.pyplot as plt
 from cifar10 import DataLoader
 
+def rgb2gray(rgb):
+    return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
 
 cifar = DataLoader()
 isMnist = False
@@ -22,6 +24,11 @@ def train(network_architecture, learning_rate=0.001, batch_size=100, training_ep
                 batch_xs, _ = mnist.train.next_batch(batch_size)
             else:
                 batch_xs = cifar.next_batch(batch_size)
+                batch_xs = np.reshape(batch_xs,[batch_size, 32, 32, 3])
+                #print batch_xs.shape
+                batch_xs = rgb2gray(batch_xs)
+                #print batch_xs.shape
+                batch_xs = np.reshape(batch_xs, [batch_size, -1])
             cost = vae.minibatch(batch_xs)
             avg_cost += cost
         print("Epoch:", '%04d' % (epoch), "cost=", "{:.9f}".format(avg_cost))
@@ -33,14 +40,15 @@ network_architecture = \
          n_hidden_recog_2=500, # 2nd layer encoder neurons
          n_hidden_gener_1=500, # 1st layer decoder neurons
          n_hidden_gener_2=500, # 2nd layer decoder neurons
-         n_input=28*28 if isMnist else 32*32*3, # MNIST data input (img shape: 28*28)
-         n_z=20)  # dimensionality of latent space
+         n_input=28*28 if isMnist else 32*32, # MNIST data input (img shape: 28*28)
+         n_z=100)  # dimensionality of latent space
 
-vae = train(network_architecture, training_epochs=5)
+vae = train(network_architecture, training_epochs=30)
 if isMnist:
     x_sample = mnist.test.next_batch(100)[0]
 else:
-    x_sample = cifar.next_batch()
+    x_sample = cifar.next_batch(100)
+    x_sample = np.reshape(rgb2gray(np.reshape(x_sample, [100, 32, 32, 3])), [100, 1024])
 
 x_reconstruct = vae.reconstruct(x_sample)[0]
 print(x_sample.shape)
@@ -49,11 +57,17 @@ plt.figure(figsize=(8, 12))
 for i in range(5):
 
     plt.subplot(5, 2, 2*i + 1)
-    plt.imshow(x_sample[i].reshape(28, 28), vmin=0, vmax=1, cmap="gray")
+    if isMnist:
+        plt.imshow(x_sample[i].reshape(28, 28), vmin=0, vmax=1, cmap="gray")
+    else:
+        plt.imshow(x_sample[i].reshape(32, 32), vmin=0, vmax=1, cmap="gray")
     plt.title("Test input")
     plt.colorbar()
     plt.subplot(5, 2, 2*i + 2)
-    plt.imshow(x_reconstruct[i].reshape(28, 28), vmin=0, vmax=1, cmap="gray")
+    if isMnist:
+        plt.imshow(x_reconstruct[i].reshape(28, 28), vmin=0, vmax=1, cmap="gray")
+    else:
+        plt.imshow(x_reconstruct[i].reshape(32, 32), vmin=0, vmax=1, cmap="gray")
     plt.title("Reconstruction")
     plt.colorbar()
 plt.tight_layout()
