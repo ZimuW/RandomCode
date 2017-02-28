@@ -8,6 +8,8 @@ from glob import glob
 from scipy.misc import imsave as ims
 from random import randint
 from cifar10 import DataLoader
+
+
 cifar = True
 cifar10 = DataLoader()
 
@@ -47,7 +49,10 @@ def generator(z):
         return tf.nn.tanh(h4)
 
 with tf.Session() as sess:
-    batchsize = 64
+
+    # batchsize = 64
+    batchsize = 100
+
     iscrop = False
     imagesize = 108
     imageshape = [64, 64, 3]
@@ -125,14 +130,15 @@ with tf.Session() as sess:
             for idx in xrange(batch_idx):
                 batch_images = None
                 if cifar:
-                    batchnum = randint(0,150)
+
+                    batchnum = randint(0,50)
+                    # trainingData = batch["data"][batchnum*batchsize:(batchnum+1)*batchsize]
                     trainingData = cifar10.next_batch(batchsize)
-		    # trainingData = batch["data"][batchnum*batchsize:(batchnum+1)*batchsize]
-		    print trainingData.shape
                     trainingData = transform(trainingData, is_crop=False)
-		    batch_images = np.reshape(trainingData,(batchsize,32, 32, 3))
-                    #batch_images = np.reshape(trainingData,(batchsize,3, 32, 32))
-                    #batch_images = np.swapaxes(batch_images,1,3)
+                    # batch_images = np.reshape(trainingData,(batchsize,3,32,32))
+                    batch_images = np.reshape(trainingData,(batchsize,32,32,3))
+                    # batch_images = np.swapaxes(batch_images,1,3)
+
                 else:
                     batch_files = data[idx*batchsize:(idx+1)*batchsize]
                     batchim = [get_image(batch_file, [64,64,3], is_crop=False) for batch_file in batch_files]
@@ -155,7 +161,10 @@ with tf.Session() as sess:
                 if counter % 200 == 0:
                     sdata = sess.run([G],feed_dict={ zin: display_z })
                     print np.shape(sdata)
-                    ims("results/new_cifar/"+str(counter)+".jpg",merge(sdata[0],[8,8]))
+
+                    sdata = sdata * 255
+                    ims("test_train/"+str(counter)+".jpg",merge(sdata[0],[10,10]))
+
                     errD_fake = d_loss_fake.eval({zin: display_z})
                     errD_real = d_loss_real.eval({images: batch_images})
                     errG = gloss.eval({zin: batch_z})
@@ -168,8 +177,14 @@ with tf.Session() as sess:
         saver.restore(sess, tf.train.latest_checkpoint(os.getcwd()+"/training/"))
         batch_z = np.random.uniform(-1, 1, [1, z_dim]).astype(np.float32)
         batch_z = np.repeat(batch_z, batchsize, axis=0)
+
         for i in xrange(z_dim):
             edited = np.copy(batch_z)
             edited[:,i] = (np.arange(0.0, batchsize) / (batchsize/2)) - 1
             sdata = sess.run([G],feed_dict={ zin: edited })
             ims("results/new_cifar_test/"+str(i)+".jpg",merge(sdata[0],[8,8]))
+
+        sdata = sess.run([G],feed_dict={ zin: batch_z })
+        print sdata[0].shape
+        print sdata[0][0]
+        ims("results/"+"test_.jpg",merge(sdata[0],[10,10]))
