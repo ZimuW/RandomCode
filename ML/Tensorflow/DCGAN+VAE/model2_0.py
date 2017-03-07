@@ -140,11 +140,11 @@ class DCGANVAE(object):
                 h2=conv_transpose(h1, [self.batch_size, 28, 28, 1], name="g_h2")
                 return tf.nn.tanh(h2)
             if self.isCifar:
-                z2=dense(self.z, self.z_dim, 4 * 4 * self.gf_dim * 4, scope='g_h0_lin')
-                h0=self.g_bn0(tf.reshape(z2, [-1, 4, 4, self.gf_dim * 4]))  # 4x4x256
-                h1=self.g_bn1(conv_transpose(h0, [self.batch_size, 8, 8, self.gf_dim * 2], name="g_h1"))  # 8x8x128
-                h2=self.g_bn2(conv_transpose(h1, [self.batch_size, 16, 16, self.gf_dim * 1], name="g_h2"))  # 16x16x64
-                h3=conv_transpose(h2, [self.batch_size, 32, 32, 3], name="g_h3")
+                z2=tf.nn.relu(dense(self.z, self.z_dim, 4 * 4 * self.gf_dim * 4, scope='g_h0_lin'))
+                h0=tf.nn.relu(self.g_bn0(tf.reshape(z2, [-1, 4, 4, self.gf_dim * 4])))  # 4x4x256
+                h1=tf.nn.relu(self.g_bn1(conv_transpose(h0, [self.batch_size, 8, 8, self.gf_dim * 2], name="g_h1")))  # 8x8x128
+                h2=tf.nn.relu(self.g_bn2(conv_transpose(h1, [self.batch_size, 16, 16, self.gf_dim * 1], name="g_h2")))  # 16x16x64
+                h3=tf.nn.relu(self.g_bn3(conv_transpose(h2, [self.batch_size, 32, 32, 3], name="g_h3")))
                 return tf.nn.sigmoid(h3)
             if self.isImageNet:
                 z2=dense(self.z, self.z_dim, self.gf_dim * 8 * 4 * 4, scope='g_h0_lin')
@@ -162,13 +162,13 @@ class DCGANVAE(object):
     def encoder(self, input_tensor):
         e0=tf.reshape(
             self.inputs, [-1, self.input_height, self.input_width, self.c_dim])
-        e1=conv2d(e0, 64, name='e_1')
-        e2=conv2d(e1, 128, name="e_2")
-        e3=conv2d(e2, 256, name="e_3")
+        e1=tf.nn.relu(conv2d(e0, 64, name='e_1'))
+        e2=tf.nn.relu(conv2d(e1, 128, name="e_2"))
+        e3=tf.nn.relu(conv2d(e2, 256, name="e_3"))
         e4=tf.reshape(e3, [self.batch_size, -1])
         self.half_encoded = e4
-        z_mean=fully_connected(e4, self.z_dim, scope="e_linear1")
-        z_log_sigma_sq=fully_connected(e4,  self.z_dim, scope="e_linear2")
+        z_mean=tf.nn.relu(fully_connected(e4, self.z_dim, scope="e_linear1"))
+        z_log_sigma_sq=tf.nn.relu(fully_connected(e4,  self.z_dim, scope="e_linear2"))
         return z_mean, z_log_sigma_sq
 
         # H1 = tf.nn.dropout(tf.nn.(linear(self.inputs_flatten, 512, 'e_lin1')), self.keep_prob)
@@ -190,13 +190,13 @@ class DCGANVAE(object):
                          4 * 4 * self.df_dim * 4, 1, scope='d_h3_lin')
                 return tf.nn.sigmoid(h3), h3
             if self.isCifar:
-                h0=conv2d(image, self.df_dim, name='d_h0_conv') # 16x16x64
+                h0=tf.nn.relu(conv2d(image, self.df_dim, name='d_h0_conv')) # 16x16x64
                 # 8x8x128
-                h1=self.d_bn1(conv2d(h0, self.df_dim * 2, name='d_h1_conv'))
+                h1=tf.nn.relu(self.d_bn1(conv2d(h0, self.df_dim * 2, name='d_h1_conv')))
                 # 4x4x256
-                h2=self.d_bn2(conv2d(h1,  self.df_dim * 4, name='d_h2_conv'))
+                h2=tf.nn.relu(self.d_bn2(conv2d(h1,  self.df_dim * 4, name='d_h2_conv')))
 
-                h3=tf.nn.elu(dense(tf.reshape(h2, [self.batch_size, -1]), 4 * 4 * self.df_dim * 4, 1024, scope='d_h3_lin'))
+                h3=tf.nn.relu(dense(tf.reshape(h2, [self.batch_size, -1]), 4 * 4 * self.df_dim * 4, 1024, scope='d_h3_lin'))
                 h4 = dense(h3, 1024, 1, scope='d_h4_lin')
                 return tf.nn.sigmoid(h4), h3
             if self.isImageNet:
