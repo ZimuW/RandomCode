@@ -12,10 +12,10 @@ class CNNVAE(object):
     def __init__(self,
                  data_name="Mnist",
                  batch_size=100,
-                 input_height=32,
-                 input_width=32,
-                 output_height=32,
-                 output_width=32,
+                 input_height=64,
+                 input_width=64,
+                 output_height=64,
+                 output_width=64,
                  z_dim=100,
                  c_dim=3,
                  gf_dim=64,
@@ -54,7 +54,6 @@ class CNNVAE(object):
         self.dfc_dim = dfc_dim
         self.keep_prob = keep_prob
         self.learning_rate = learning_rate
-        self.learning_rate_d = learning_rate_d
         self.learning_rate_vae = learning_rate_vae
         self.beta1 = beta1
         self.model_name = model_name
@@ -96,8 +95,8 @@ class CNNVAE(object):
         self.t_var=tf.trainable_variables()
 
 
-        self.e_loss = tf.clip_by_value(self.latent_loss + self.reconstructed_loss, -100, 100)
-
+        #self.e_loss = tf.clip_by_value(self.latent_loss + self.reconstructed_loss, -100, 100)
+        self.e_loss = self.latent_loss + self.reconstructed_loss
         self.opt_E = tf.train.AdamOptimizer(0.001, epsilon=1.0).minimize(self.e_loss, var_list = self.t_var)
         self.sess=tf.InteractiveSession()
         self.sess.run(tf.global_variables_initializer())
@@ -118,7 +117,7 @@ class CNNVAE(object):
                 h1=tf.nn.relu(self.g_bn1(conv_transpose(h0, [self.batch_size, 8, 8, self.gf_dim * 2], name="g_h1")))  # 8x8x128
                 h2=tf.nn.relu(self.g_bn2(conv_transpose(h1, [self.batch_size, 16, 16, self.gf_dim * 1], name="g_h2")))  # 16x16x64
                 h3=conv_transpose(h2, [self.batch_size, 32, 32, 3], name="g_h3")
-                return tf.nn.sigmoid(h3)
+                return tf.nn.tanh(h3)
             if self.isImageNet:
                 z2=dense(self.z, self.z_dim, self.gf_dim * 8 * 4 * 4, scope='g_h0_lin')
                 h0=tf.nn.relu(self.g_bn0(tf.reshape(z2, [-1, 4, 4, self.gf_dim * 8])))
@@ -129,7 +128,7 @@ class CNNVAE(object):
                 h3=tf.nn.relu(self.g_bn3(conv_transpose(
                     h2, [self.batch_size, 32, 32, self.gf_dim * 1], name="g_h3")))
                 h4=conv_transpose(h3, [self.batch_size, 64, 64, 3], name="g_h4")
-                return tf.nn.tanh(h4)
+                return tf.nn.sigmoid(h4)
 
 
     def encoder(self, input_tensor):
@@ -156,7 +155,7 @@ class CNNVAE(object):
         # print d_loss.shape
         # print g_loss.shape
         # print vae_loss.shape
-        # vae_loss = np.mean(vae_loss)
+        vae_loss = np.mean(vae_loss) / self.input_width / self.input_width / self.c_dim
         # print vae_loss
         return vae_loss
 
