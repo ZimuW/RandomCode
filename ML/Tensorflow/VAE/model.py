@@ -24,7 +24,7 @@ class VariantionalAutoencoder(object):
         self.create_loss_optimizer()
 
         self.sess = tf.InteractiveSession()
-        self.sess.run(tf.initialize_all_variables())
+        self.sess.run(tf.global_variables_initializer())
 
     def create_network(self):
         network_weights = self.initialize_weights(**self.network_architecture)

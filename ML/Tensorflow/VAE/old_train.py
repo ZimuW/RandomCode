@@ -10,7 +10,7 @@ def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
 
 cifar = DataLoader()
-isMnist = False
+isMnist = True
 if isMnist:
     from tensorflow.examples.tutorials.mnist import input_data
     mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
@@ -42,9 +42,9 @@ network_architecture = \
          n_hidden_gener_1=500, # 1st layer decoder neurons
          n_hidden_gener_2=500, # 2nd layer decoder neurons
          n_input=28*28 if isMnist else 32*32, # MNIST data input (img shape: 28*28)
-         n_z=100)  # dimensionality of latent space
+         n_z=2)  # dimensionality of latent space
 
-vae = train(network_architecture, training_epochs=30)
+vae = train(network_architecture, training_epochs=6)
 if isMnist:
     x_sample = mnist.test.next_batch(100)[0]
 else:
