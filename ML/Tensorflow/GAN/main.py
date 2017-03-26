@@ -8,28 +8,27 @@ from glob import glob
 from scipy.misc import imsave as ims
 from random import randint
 from cifar10 import DataLoader
+from celeba import CelebLoader
 
-
-cifar = True
+cifar = False
 cifar10 = DataLoader()
-
+celeb = CelebLoader()
 def discriminator(image, reuse=False):
-    if reuse:
-            tf.get_variable_scope().reuse_variables()
+    with tf.variable_scope(tf.get_variable_scope(), reuse=reuse):
 
-    if cifar:
-        h0 = lrelu(conv2d(image, 3, df_dim, name='d_h0_conv')) #16x16x64
-        h1 = lrelu(d_bn1(conv2d(h0, df_dim, df_dim*2, name='d_h1_conv'))) #8x8x128
-        h2 = lrelu(d_bn2(conv2d(h1, df_dim*2, df_dim*4, name='d_h2_conv'))) #4x4x256
-        h4 = dense(tf.reshape(h2, [batchsize, -1]), 4*4*df_dim*4, 1, scope='d_h3_lin')
-        return tf.nn.sigmoid(h4), h4
-    else:
-        h0 = lrelu(conv2d(image, 3, df_dim, name='d_h0_conv'))
-        h1 = lrelu(d_bn1(conv2d(h0, 64, df_dim*2, name='d_h1_conv')))
-        h2 = lrelu(d_bn2(conv2d(h1, 128, df_dim*4, name='d_h2_conv')))
-        h3 = lrelu(d_bn3(conv2d(h2, 256, df_dim*8, name='d_h3_conv')))
-        h4 = dense(tf.reshape(h3, [batchsize, -1]), 4*4*512, 1, scope='d_h3_lin')
-        return tf.nn.sigmoid(h4), h4
+        if cifar:
+            h0 = lrelu(conv2d(image, 3, df_dim, name='d_h0_conv')) #16x16x64
+            h1 = lrelu(d_bn1(conv2d(h0, df_dim, df_dim*2, name='d_h1_conv'))) #8x8x128
+            h2 = lrelu(d_bn2(conv2d(h1, df_dim*2, df_dim*4, name='d_h2_conv'))) #4x4x256
+            h4 = dense(tf.reshape(h2, [batchsize, -1]), 4*4*df_dim*4, 1, scope='d_h3_lin')
+            return tf.nn.sigmoid(h4), h4
+        else:
+            h0 = lrelu(conv2d(image, 3, df_dim, name='d_h0_conv'))
+            h1 = lrelu(d_bn1(conv2d(h0, 64, df_dim*2, name='d_h1_conv')))
+            h2 = lrelu(d_bn2(conv2d(h1, 128, df_dim*4, name='d_h2_conv')))
+            h3 = lrelu(d_bn3(conv2d(h2, 256, df_dim*8, name='d_h3_conv')))
+            h4 = dense(tf.reshape(h3, [batchsize, -1]), 4*4*512, 1, scope='d_h3_lin')
+            return tf.nn.sigmoid(h4), h4
 
 def generator(z):
     if cifar:
@@ -88,10 +87,10 @@ with tf.Session() as sess:
 
     D_fake_prob, D_fake_logit = discriminator(G, reuse=True)
 
-    d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_logit, tf.ones_like(D_logit)))
-    d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_fake_logit, tf.zeros_like(D_fake_logit)))
+    d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logit, labels=tf.ones_like(D_logit)))
+    d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_fake_logit, labels=tf.zeros_like(D_fake_logit)))
 
-    gloss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_fake_logit, tf.ones_like(D_fake_logit)))
+    gloss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=D_fake_logit, labels=tf.ones_like(D_fake_logit)))
     dloss = d_loss_real + d_loss_fake
 
     t_vars = tf.trainable_variables()
@@ -108,7 +107,7 @@ with tf.Session() as sess:
 
     d_optim = tf.train.AdamOptimizer(learningrate, beta1=beta1).minimize(dloss, var_list=d_vars)
     g_optim = tf.train.AdamOptimizer(learningrate, beta1=beta1).minimize(gloss, var_list=g_vars)
-    tf.initialize_all_variables().run()
+    sess.run(tf.global_variables_initializer())
 
     saver = tf.train.Saver(max_to_keep=10)
 
@@ -126,7 +125,7 @@ with tf.Session() as sess:
     if train:
         # saver.restore(sess, tf.train.latest_checkpoint(os.getcwd()+"/training/"))
         for epoch in xrange(10):
-            batch_idx = 30000 if cifar else (len(data)/batchsize)-2
+            batch_idx = 30000
             for idx in xrange(batch_idx):
                 batch_images = None
                 if cifar:
@@ -134,21 +133,24 @@ with tf.Session() as sess:
                     batchnum = randint(0,50)
                     # trainingData = batch["data"][batchnum*batchsize:(batchnum+1)*batchsize]
                     trainingData = cifar10.next_batch(batchsize)
+                    # trainingData = celeb.next_batch(batchsize)
                     trainingData = transform(trainingData, is_crop=False)
                     # batch_images = np.reshape(trainingData,(batchsize,3,32,32))
                     batch_images = np.reshape(trainingData,(batchsize,32,32,3))
                     # batch_images = np.swapaxes(batch_images,1,3)
 
                 else:
-                    batch_files = data[idx*batchsize:(idx+1)*batchsize]
-                    batchim = [get_image(batch_file, [64,64,3], is_crop=False) for batch_file in batch_files]
-                    batch_images = np.array(batchim).astype(np.float32)
+                    # batch_files = data[idx*batchsize:(idx+1)*batchsize]
+                    trainingData = celeb.next_batch(batchsize)
+                    batch_images = np.reshape(trainingData,(batchsize,64,64,3))
+                    # batchim = [get_image(batch_file, [64,64,3], is_crop=False) for batch_file in batch_files]
+                    batch_images = np.array(batch_images).astype(np.float32)
 
                 batch_z = np.random.uniform(-1, 1, [batchsize, z_dim]).astype(np.float32)
 
                 for k in xrange(1):
-                    sess.run([d_optim],feed_dict={ images: batch_images, zin: batch_z })
-                for k in xrange(1):
+                    _, cur_d_loss = sess.run([d_optim, dloss],feed_dict={ images: batch_images, zin: batch_z })
+                for k in xrange(2):
                     sess.run([g_optim],feed_dict={ zin: batch_z })
 
 
@@ -156,7 +158,7 @@ with tf.Session() as sess:
                 counter += 1
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, " \
                     % (epoch, idx, batch_idx,
-                        time.time() - start_time,))
+                        time.time() - start_time,)), "d_loss", cur_d_loss
 
                 if counter % 200 == 0:
                     sdata = sess.run([G],feed_dict={ zin: display_z })
