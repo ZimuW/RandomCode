@@ -12,10 +12,10 @@ class CNNVAE(object):
     def __init__(self,
                  data_name="Mnist",
                  batch_size=100,
-                 input_height=64,
-                 input_width=64,
-                 output_height=64,
-                 output_width=64,
+                 input_height=32,
+                 input_width=32,
+                 output_height=32,
+                 output_width=32,
                  z_dim=100,
                  c_dim=3,
                  gf_dim=64,
@@ -117,7 +117,7 @@ class CNNVAE(object):
                 h1=tf.nn.relu(self.g_bn1(conv_transpose(h0, [self.batch_size, 8, 8, self.gf_dim * 2], name="g_h1")))  # 8x8x128
                 h2=tf.nn.relu(self.g_bn2(conv_transpose(h1, [self.batch_size, 16, 16, self.gf_dim * 1], name="g_h2")))  # 16x16x64
                 h3=conv_transpose(h2, [self.batch_size, 32, 32, 3], name="g_h3")
-                return tf.nn.tanh(h3)
+                return tf.nn.sigmoid(h3)
             if self.isImageNet:
                 z2=dense(self.z, self.z_dim, self.gf_dim * 8 * 4 * 4, scope='g_h0_lin')
                 h0=tf.nn.relu(self.g_bn0(tf.reshape(z2, [-1, 4, 4, self.gf_dim * 8])))

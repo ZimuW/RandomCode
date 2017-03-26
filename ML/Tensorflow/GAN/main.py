@@ -10,7 +10,7 @@ from random import randint
 from cifar10 import DataLoader
 from celeba import CelebLoader
 
-cifar = False
+cifar = True
 cifar10 = DataLoader()
 celeb = CelebLoader()
 def discriminator(image, reuse=False):

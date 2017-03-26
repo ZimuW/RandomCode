@@ -10,7 +10,7 @@ def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
 
 cifar = DataLoader()
-isMnist = True
+isMnist = False
 if isMnist:
     from tensorflow.examples.tutorials.mnist import input_data
     mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
@@ -27,7 +27,7 @@ def train(network_architecture, learning_rate=0.001, batch_size=100, training_ep
                 batch_xs = cifar.next_batch(batch_size)
                 batch_xs = np.reshape(batch_xs,[batch_size, 32, 32, 3])
                 #print batch_xs.shape
-                batch_xs = rgb2gray(batch_xs)
+                # batch_xs = rgb2gray(batch_xs)
                 #print batch_xs.shape
                 batch_xs = np.reshape(batch_xs, [batch_size, -1])
             cost = vae.minibatch(batch_xs)
@@ -41,16 +41,16 @@ network_architecture = \
          n_hidden_recog_2=500, # 2nd layer encoder neurons
          n_hidden_gener_1=500, # 1st layer decoder neurons
          n_hidden_gener_2=500, # 2nd layer decoder neurons
-         n_input=28*28 if isMnist else 32*32, # MNIST data input (img shape: 28*28)
-         n_z=2)  # dimensionality of latent space
+         n_input=28*28 if isMnist else 32*32*3, # MNIST data input (img shape: 28*28)
+         n_z=200)  # dimensionality of latent space
 
-vae = train(network_architecture, training_epochs=6)
+vae = train(network_architecture, training_epochs=20)
 if isMnist:
     x_sample = mnist.test.next_batch(100)[0]
 else:
     x_sample = cifar.next_batch(100)
-    x_sample = np.reshape(rgb2gray(np.reshape(x_sample, [100, 32, 32, 3])), [100, 1024])
-
+    # x_sample = np.reshape(rgb2gray(np.reshape(x_sample, [100, 32, 32, 3])), [100, 1024])
+    x_sample = np.reshape(x_sample, [100, 3072])
 x_reconstruct = vae.reconstruct(x_sample)[0]
 print(x_sample.shape)
 print(x_reconstruct.shape)
@@ -61,14 +61,14 @@ for i in range(5):
     if isMnist:
         plt.imshow(x_sample[i].reshape(28, 28), vmin=0, vmax=1, cmap="gray")
     else:
-        plt.imshow(x_sample[i].reshape(32, 32), vmin=0, vmax=1, cmap="gray")
+        plt.imshow(x_sample[i].reshape(32, 32, 3), vmin=0, vmax=1)
     plt.title("Test input")
     plt.colorbar()
     plt.subplot(5, 2, 2*i + 2)
     if isMnist:
         plt.imshow(x_reconstruct[i].reshape(28, 28), vmin=0, vmax=1, cmap="gray")
     else:
-        plt.imshow(x_reconstruct[i].reshape(32, 32), vmin=0, vmax=1, cmap="gray")
+        plt.imshow(x_reconstruct[i].reshape(32, 32, 3), vmin=0, vmax=1)
     plt.title("Reconstruction")
     plt.colorbar()
 plt.tight_layout()
